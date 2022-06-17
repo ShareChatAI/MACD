@@ -14,6 +14,9 @@ included with <strong>MACD</strong> - <em>Hindi, Tamil, Telugu, Malayalam and Ka
 
 Each row in these files contains the label and text where labels 0 and 1 are used for <strong>abusive</strong> and <strong>non-abusive</strong> comments, respectively.
 
+## AbuseXLMR:
+
+Our pretrained AbuseXLMR model can be downloaded from [here](https://drive.google.com/file/d/1asMbJgqvsi9hWlK4dpKAaHAmvQkkAELd/view?usp=sharing)
 
 ## Installation:
 
