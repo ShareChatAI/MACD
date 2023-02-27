@@ -16,7 +16,7 @@ Each row in these files contains the label and text where labels 0 and 1 are use
 
 ## AbuseXLMR:
 
-Our pretrained AbuseXLMR model can be downloaded from [here](https://drive.google.com/file/d/1asMbJgqvsi9hWlK4dpKAaHAmvQkkAELd/view?usp=sharing)
+Our pretrained AbuseXLMR model can be downloaded from [here](https://drive.google.com/file/d/1-ojPP71SMtC9xHdwjRH0B1yoZkvbYPyw/view?usp=share_link)
 
 ## Installation:
 
