@@ -15,7 +15,7 @@ from tqdm import tqdm
 all_langs = ["hindi", "tamil", "telugu", "malyalam", "kannada"]
 
 class MACDDataset(torch.utils.data.Dataset):
-    
+
     def __init__(self, encodings, labels):
         self.encodings = encodings
         self.labels = labels
@@ -28,10 +28,10 @@ class MACDDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.labels)
 
-def read_text_label(base_path, lang, exp, split):
-    
+def read_text_label(base_path, lang, split):
+
     split_text, split_labels = [], []
-    
+
     print(f"Reading {split} for {lang} from {base_path + f'{lang}_{split}.csv'}")
     all_data = open(base_path + f'{lang}_{split}.csv').readlines()
     for idx, dt in enumerate(all_data):
@@ -40,11 +40,11 @@ def read_text_label(base_path, lang, exp, split):
         label, text = all_data[idx].strip().split(",", 1)
         split_text.append(text)
         split_labels.append(int(label))
-    
+
     return split_text, split_labels
-    
+
 def prepare_test_dataset(args, lang, tokenizer):
-    test_text, test_labels = read_text_label(args.base_path, lang, args.exp, "test")
+    test_text, test_labels = read_text_label(args.base_path, lang, "test")
     # Encode Dataset
     test_text = encode_dataset(test_text, None, None, tokenizer, args.max_length, True)
     test_dataset = MACDDataset(test_text, test_labels)
@@ -52,10 +52,10 @@ def prepare_test_dataset(args, lang, tokenizer):
 
 def prepare_dataset(args, tokenizer):
 
-    train_text, train_labels = read_text_label(args.base_path, args.lang, args.exp, "train")
-    val_text, val_labels = read_text_label(args.base_path, args.lang, args.exp, "val")
-    test_text, test_labels = read_text_label(args.base_path, args.lang, args.exp, "test")
-    
+    train_text, train_labels = read_text_label(args.base_path, args.lang, "train")
+    val_text, val_labels = read_text_label(args.base_path, args.lang, "val")
+    test_text, test_labels = read_text_label(args.base_path, args.lang, "test")
+
     # Encode Dataset
     train_text, val_text, test_text = encode_dataset(train_text, val_text, test_text, tokenizer, args.max_length)
     train_dataset = MACDDataset(train_text, train_labels)
@@ -75,8 +75,8 @@ def encode_dataset(train_text, val_text, test_text, tokenizer, max_length, is_te
 
 def get_metrics(preds, labels):
     acc = accuracy_score(labels, preds)
-    f1_micro = f1_score(labels, preds, average='micro')  
-    f1_macro = f1_score(labels, preds, average='macro') 
+    f1_micro = f1_score(labels, preds, average='micro')
+    f1_macro = f1_score(labels, preds, average='macro')
     print ('jacc acc:{}, f1 micro score:{} f1 macro score:{}'.format(acc, f1_micro, f1_macro))
     return acc, f1_micro, f1_macro
 
@@ -97,20 +97,23 @@ def evaluate(input_ids, attn_mask, token_type_ids, label, model):
         logits = model(input_ids, attn_mask, token_type_ids)
         preds = torch.argmax(logits.logits, dim=-1)
     return preds.cpu().tolist(), label.tolist()
-        
+
 def finetune_model(args):
-    
+
     # Model and Tokenizer
     if args.model_name == "abusexlmr":
         tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base", use_fast = True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(args.model_checkpoint, use_fast = True)
     model = AutoModelForSequenceClassification.from_pretrained(args.model_checkpoint, num_labels = args.num_labels)
-    model = model.cuda()
+
+    # Move model to GPU if CUDA is available
+    if torch.cuda.is_available() and args.cuda:
+        model = model.cuda()
 
     # Dataset
     train_dataset, val_dataset, test_dataset = prepare_dataset(args, tokenizer)
-    
+
     train_args = TrainingArguments(
         args.output_dir,
         evaluation_strategy = "epoch",
@@ -132,13 +135,13 @@ def finetune_model(args):
         tokenizer = tokenizer,
         compute_metrics = compute_metrics
     )
-    
+
     print ('-'*50)
     print("Training the model")
-    
+
     trainer.train()
     print ('-'*50)
-    
+
     print("Evaluating the best model on test set")
     test_metrics = trainer.predict(test_dataset)
     test_f1_score = test_metrics[2]["test_f1_macro"]
